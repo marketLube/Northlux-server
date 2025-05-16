@@ -26,6 +26,10 @@ const brandSchema = new Schema(
       type: String,
       default: null,
     },
+    mobileBannerImage: {
+      type: String,
+      default: null,
+    },
     isPriority: {
       type: Boolean,
       default: false,

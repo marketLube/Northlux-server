@@ -33,6 +33,14 @@ const createBrand = catchAsync(async (req, res, next) => {
       const uploadedBanner = await uploadToCloudinary(bannerFile.buffer);
       brandData.bannerImage = uploadedBanner;
     }
+
+    const mobileBannerFile = req.files.find(
+      (file) => file.fieldname === "mobileBannerImage"
+    );
+    if (mobileBannerFile) {
+      const uploadedMobileBanner = await uploadToCloudinary(mobileBannerFile.buffer);
+      brandData.mobileBannerImage = uploadedMobileBanner;
+    }
   }
 
   const newBrand = await Brand.create(brandData);
@@ -135,6 +143,14 @@ const updateBrand = catchAsync(async (req, res, next) => {
     if (bannerFile) {
       const uploadedBanner = await uploadToCloudinary(bannerFile.buffer);
       brand.bannerImage = uploadedBanner;
+      }
+
+    const mobileBannerFile = req.files.find(
+      (file) => file.fieldname === "mobileBannerImage"
+    );
+    if (mobileBannerFile) {
+      const uploadedMobileBanner = await uploadToCloudinary(mobileBannerFile.buffer);
+      brand.mobileBannerImage = uploadedMobileBanner;
     }
   }
 

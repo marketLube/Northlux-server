@@ -24,9 +24,27 @@ const createBanner = catchAsync(async (req, res, next) => {
   }
 
   if (req.files && req.files.length > 0) {
-    const imageFile = req.files[0];
-    const uploadedImage = await uploadToCloudinary(imageFile.buffer);
-    bannerData.image = uploadedImage;
+    console.log(req.files, "req.files");
+    
+    // Handle images based on fieldname
+    for (const file of req.files) {
+      const uploadedImage = await uploadToCloudinary(file.buffer);
+      
+      switch (file.fieldname) {
+        case 'image':
+          bannerData.image = uploadedImage;
+          break;
+        case 'mobileImage':
+          bannerData.mobileImage = uploadedImage;
+          break;
+        case 'editImage':
+          bannerData.image = uploadedImage;
+          break;
+        case 'editMobileImage':
+          bannerData.mobileImage = uploadedImage;
+          break;
+      }
+    }
   }
 
   const newBanner = await Banner.create(bannerData);
@@ -78,9 +96,27 @@ const updateBanner = catchAsync(async (req, res, next) => {
   }
 
   if (req.files && req.files.length > 0) {
-    const imageFile = req.files[0];
-    const uploadedImage = await uploadToCloudinary(imageFile.buffer);
-    banner.image = uploadedImage;
+    console.log(req.files, "req.files");
+    
+    // Handle images based on fieldname
+    for (const file of req.files) {
+      const uploadedImage = await uploadToCloudinary(file.buffer);
+      
+      switch (file.fieldname) {
+        case 'image':
+          banner.image = uploadedImage;
+          break;
+        case 'mobileImage':
+          banner.mobileImage = uploadedImage;
+          break;
+        case 'editImage':
+          banner.image = uploadedImage;
+          break;
+        case 'editMobileImage':
+          banner.mobileImage = uploadedImage;
+          break;
+      }
+    }
   }
 
   banner.title = title || banner.title;
@@ -115,7 +151,7 @@ const getAllBannersByCategory = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: "success", data: banners });
 });
 
-module.exports = {
+module.exports = {  
   createBanner,
   getAllBanners,
   deleteBanner,

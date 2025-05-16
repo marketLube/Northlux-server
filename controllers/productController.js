@@ -11,6 +11,7 @@ const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 const mongoose = require("mongoose");
 const formatProductResponse = require("../helpers/product/formatProducts");
+const categoryModel = require("../model/categoryModel");
 
 const addProduct = catchAsync(async (req, res, next) => {
   const {
@@ -223,6 +224,8 @@ const listProducts = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.query;
 
+  console.log(req.query , "req.query");
+
   page = parseInt(page) || 1;
   limit = parseInt(limit) || 10;
   const skip = (page - 1) * limit;
@@ -258,6 +261,23 @@ const listProducts = catchAsync(async (req, res, next) => {
     filter.category = new mongoose.Types.ObjectId(category);
   }
 
+  if (categoryId && categoryId !== "All Categories") {
+    filter.category = new mongoose.Types.ObjectId(categoryId);
+    const subcategories = await categoryModel.find({
+      parent: new mongoose.Types.ObjectId(categoryId),
+    });
+    if (subcategories.length > 0) {
+      filter.category = {
+        $in: [
+          new mongoose.Types.ObjectId(categoryId),
+          ...subcategories.map((subcategory) => subcategory._id)
+        ]
+      };
+    } else {
+      filter.category = new mongoose.Types.ObjectId(categoryId);
+    }
+  }
+
   if (subcategoryId) {
     filter.category = new mongoose.Types.ObjectId(subcategoryId);
   }
@@ -270,6 +290,7 @@ const listProducts = catchAsync(async (req, res, next) => {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
       { description: { $regex: search, $options: "i" } },
+      { sku: { $regex: search, $options: "i" } },
     ];
   }
 
@@ -281,6 +302,8 @@ const listProducts = catchAsync(async (req, res, next) => {
   if (activeStatus && activeStatus !== "all") {
     filter.activeStatus = activeStatus === "active" ? true : false;
   }
+
+  console.log(filter , "filter");
 
   // Use aggregation pipeline for proper price handling
   const aggregationPipeline = [

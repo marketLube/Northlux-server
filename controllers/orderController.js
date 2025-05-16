@@ -106,6 +106,14 @@ const placeOrder = catchAsync(async (req, res, next) => {
     },
     {
       $lookup: {
+        from: "brands",
+        localField: "brand",
+        foreignField: "_id",
+        as: "brand",
+      },
+    },
+    {
+      $lookup: {
         from: "variants",
         let: { variantIds: "$variants" },
         pipeline: [
@@ -139,6 +147,8 @@ const placeOrder = catchAsync(async (req, res, next) => {
         store: { $arrayElemAt: ["$store", 0] },
         variants: 1,
         stock: 1,
+        brand: { $arrayElemAt: ["$brand", 0] },
+        sku: 1,
       },
     },
   ];
@@ -191,6 +201,8 @@ const placeOrder = catchAsync(async (req, res, next) => {
         productName: product.name,
         productImage: product.images[0],
         variantName: product.variants?.[0]?.attributes?.title || null,
+        brandName:product.brand?.name || null,
+        sku:product.sku || null,
         quantity,
         pricePerUnit: finalPrice,
         totalAmount,

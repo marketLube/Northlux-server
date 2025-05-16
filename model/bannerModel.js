@@ -13,6 +13,10 @@ const bannerSchema = new Schema({
     type: String,
     default: null,
   },
+  mobileImage: {
+    type: String,
+    default: null,
+  },
   category: {
     type: Schema.Types.ObjectId,
     ref: "Category",

@@ -55,7 +55,7 @@ const addCategory = catchAsync(async (req, res, next) => {
 });
 
 const getAllCategories = catchAsync(async (req, res) => {
-  const { brandId } = req.query;
+  const { brandId , isAdmin } = req.query;
 
   // If brandId is provided, find categories through products
   if (brandId) {
@@ -69,6 +69,7 @@ const getAllCategories = catchAsync(async (req, res) => {
       $or: [
         { _id: { $in: brandProducts } },
         { parent: { $in: brandProducts } },
+        { _id: { $in: await Category.find({ _id: { $in: brandProducts }, isSubcategory: true }).distinct('parent') } }
       ],
     }).populate({
       path: "subcategories",
@@ -95,7 +96,13 @@ const getAllCategories = catchAsync(async (req, res) => {
     },
   });
 
-  const rootCategories = categories.filter((cat) => !cat.parent);
+  let rootCategories;
+
+  if(isAdmin){
+    rootCategories = categories;
+  }else{
+    rootCategories = categories.filter((cat) => !cat.parent);
+  }
 
   res.status(200).json({
     success: true,
