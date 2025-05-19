@@ -24,7 +24,6 @@ const createBanner = catchAsync(async (req, res, next) => {
   }
 
   if (req.files && req.files.length > 0) {
-    console.log(req.files, "req.files");
     
     // Handle images based on fieldname
     for (const file of req.files) {
@@ -96,7 +95,6 @@ const updateBanner = catchAsync(async (req, res, next) => {
   }
 
   if (req.files && req.files.length > 0) {
-    console.log(req.files, "req.files");
     
     // Handle images based on fieldname
     for (const file of req.files) {

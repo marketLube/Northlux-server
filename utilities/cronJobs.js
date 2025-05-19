@@ -4,7 +4,11 @@ const removeExpiredOffers = require("./services/cronJobServices");
 
 // const job = new cron.CronJob("*/1 * * * *", () => {
 //     console.log("⏳ CronJob Testing...");
+//     removeExpiredOffers();
 // });
+
+
+
 const job = new cron.CronJob("0 0 * * *", () => {
     console.log("⏳ Checking for expired offers...");
     removeExpiredOffers();

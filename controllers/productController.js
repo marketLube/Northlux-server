@@ -224,7 +224,6 @@ const listProducts = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.query;
 
-  console.log(req.query , "req.query");
 
   page = parseInt(page) || 1;
   limit = parseInt(limit) || 10;
@@ -303,7 +302,6 @@ const listProducts = catchAsync(async (req, res, next) => {
     filter.activeStatus = activeStatus === "active" ? true : false;
   }
 
-  console.log(filter , "filter");
 
   // Use aggregation pipeline for proper price handling
   const aggregationPipeline = [

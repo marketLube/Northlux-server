@@ -20,8 +20,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      "https://northluxadmin.vercel.app",
-      "https://northluxuser.vercel.app",
+      "http://localhost:5174",
       "http://localhost:5173",
       "https://www.northlux.in",
       "https://branch.northlux.in",

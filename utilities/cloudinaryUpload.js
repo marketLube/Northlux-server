@@ -29,7 +29,7 @@ const bufferToStream = (buffer) => {
 
 const uploadToCloudinary = (buffer) => {
     return new Promise((resolve, reject) => {
-        let stream = cloudinary.uploader.upload_stream({ folder: "products" }, (error, result) => {
+        let stream = cloudinary.uploader.upload_stream({ folder: "Northlux" }, (error, result) => {
             if (error) reject(error);
             else resolve(result.secure_url);
         });
