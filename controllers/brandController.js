@@ -16,7 +16,6 @@ const createBrand = catchAsync(async (req, res, next) => {
 
   const brandData = { name, description, isPriority };
 
-
   if (req.files && req.files.length > 0) {
     // Handle main brand image
     const imageFile = req.files.find((file) => file.fieldname === "image");
@@ -38,7 +37,9 @@ const createBrand = catchAsync(async (req, res, next) => {
       (file) => file.fieldname === "mobileBannerImage"
     );
     if (mobileBannerFile) {
-      const uploadedMobileBanner = await uploadToCloudinary(mobileBannerFile.buffer);
+      const uploadedMobileBanner = await uploadToCloudinary(
+        mobileBannerFile.buffer
+      );
       brandData.mobileBannerImage = uploadedMobileBanner;
     }
   }
@@ -55,7 +56,7 @@ const createBrand = catchAsync(async (req, res, next) => {
 
 // Get all brands
 const getAllBrands = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, search } = req.query;
+  const { page = 1, limit = 12, search } = req.query;
 
   const pageNumber = parseInt(page, 10);
   const limitNumber = parseInt(limit, 10);
@@ -79,6 +80,7 @@ const getAllBrands = catchAsync(async (req, res, next) => {
         { $match: { isPriority: true } },
         { $count: "count" },
       ],
+      totalCount: [{ $count: "count" }],
     },
   };
 
@@ -90,11 +92,15 @@ const getAllBrands = catchAsync(async (req, res, next) => {
 
   const brands = aggregation[0].brands;
   const priorityBrandCount = aggregation[0].priorityBrandCount[0]?.count || 0;
+  const totalCount = aggregation[0].totalCount[0]?.count || 0;
+  const totalPages = Math.ceil(totalCount / limitNumber);
 
   res.status(200).json({
     status: "success",
     results: brands.length,
+    totalPages,
     priorityBrandCount,
+    currentPage: pageNumber,
     data: {
       brands,
     },
@@ -143,13 +149,15 @@ const updateBrand = catchAsync(async (req, res, next) => {
     if (bannerFile) {
       const uploadedBanner = await uploadToCloudinary(bannerFile.buffer);
       brand.bannerImage = uploadedBanner;
-      }
+    }
 
     const mobileBannerFile = req.files.find(
       (file) => file.fieldname === "mobileBannerImage"
     );
     if (mobileBannerFile) {
-      const uploadedMobileBanner = await uploadToCloudinary(mobileBannerFile.buffer);
+      const uploadedMobileBanner = await uploadToCloudinary(
+        mobileBannerFile.buffer
+      );
       brand.mobileBannerImage = uploadedMobileBanner;
     }
   }
