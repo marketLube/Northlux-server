@@ -92,7 +92,7 @@ const getAllCategories = catchAsync(async (req, res) => {
   const categories = await Category.find().populate({
     path: "subcategories",
     populate: {
-      path: "subcategories",
+      path: "parent",
     },
   });
 

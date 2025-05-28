@@ -68,7 +68,7 @@ const getAllBrands = catchAsync(async (req, res, next) => {
       $match: { name: { $regex: search, $options: "i" } },
     };
   }
-  const sortStage = { $sort: { isPriority: -1 } };
+  const sortStage = { $sort: { isPriority: -1 , createdAt: -1 } };
 
   const facetStage = {
     $facet: {
