@@ -1,4 +1,5 @@
 const formatProductResponse = (product) => {
+  
   let hasVariants = false;
   const variants = product.variantsData || product.variants || [];
   if (Array.isArray(variants) && variants.length > 0) {
@@ -7,7 +8,7 @@ const formatProductResponse = (product) => {
 
   return {
     _id: product._id,
-    name: product.name,
+    name: product.name, 
     priority: product.priority,
     store: product.store
       ? {
