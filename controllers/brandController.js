@@ -58,11 +58,13 @@ const createBrand = catchAsync(async (req, res, next) => {
 const getAllBrands = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 12, search } = req.query;
 
+
   const pageNumber = parseInt(page, 10);
   const limitNumber = parseInt(limit, 10);
 
   let matchStage = { $match: {} };
 
+  
   if (search) {
     matchStage = {
       $match: { name: { $regex: search, $options: "i" } },

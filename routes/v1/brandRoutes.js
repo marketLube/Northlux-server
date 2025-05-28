@@ -14,7 +14,7 @@ const brandRouter = require("express").Router();
 brandRouter
   .route("/")
   .post(autheticateToken(["admin", "seller"]), upload.any(), createBrand) // Create a new brand
-  .get(getAllBrands); // Get all brands
+  .get(getAllBrands); // Get all brands 
 
 brandRouter.route("/search").get(searchBrand);
 brandRouter

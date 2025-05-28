@@ -33,14 +33,7 @@ const addProduct = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.body;
 
-  if (stockStatus === "outofstock" && stock > 0) {
-    return next(
-      new AppError(
-        "Stock status cannot be out of stock when stock quantity is greater than 0",
-        400
-      )
-    );
-  }
+
 
   const queryConditions = [];
 
@@ -603,15 +596,7 @@ const updateProduct = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Add stock validation for main product
-  if (updateData.stockStatus === "outofstock" && updateData.stock > 0) {
-    return next(
-      new AppError(
-        "Stock status cannot be out of stock when stock quantity is greater than 0",
-        400
-      )
-    );
-  }
+
 
   // Add stock validation for variants
   // if (updateData.variants) {
