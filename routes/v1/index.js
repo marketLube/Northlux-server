@@ -12,6 +12,7 @@ const storeRouter = require("./storeRoutes");
 const offerRouter = require("./offerRoutes");
 const salesRouter = require("./salesRoutes");
 const inventoryRouter = require("./inventoryRoutes");
+const subCategoryRouter = require("./subcategoryRoutes");
 
 v1Router.use("/user", userRouter);
 v1Router.use("/product", productRouter);
@@ -26,5 +27,6 @@ v1Router.use("/store", storeRouter);
 v1Router.use("/offer", offerRouter);
 v1Router.use("/sales", salesRouter);
 v1Router.use("/inventory", inventoryRouter);
+v1Router.use("/subcategory", subCategoryRouter);
 
 module.exports = v1Router;

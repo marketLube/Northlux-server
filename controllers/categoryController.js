@@ -8,37 +8,11 @@ const mongoose = require("mongoose");
 const Product = require("../model/productModel");
 
 const addCategory = catchAsync(async (req, res, next) => {
-  const { name, description, offer, parent } = req.body;
-
+  const { name, description } = req.body;
   if (!name || !description) {
     return next(new AppError("All fields are required", 400));
   }
-
   const categoryData = { name, description };
-
-  // Handle parent category if provided
-  if (parent) {
-    const parentCategory = await Category.findById(parent);
-    if (!parentCategory) {
-      return next(new AppError("Parent category not found", 404));
-    }
-    categoryData.parent = parent;
-    categoryData.isSubcategory = true;
-  }
-
-  // Handle offer if provided
-  if (offer) {
-    if (
-      !offer.title ||
-      !offer.discountPercentage ||
-      !offer.startDate ||
-      !offer.endDate
-    ) {
-      return next(new AppError("All offer fields are required", 400));
-    }
-    categoryData.offer = offer;
-  }
-
   if (req.files[0]) {
     const uploadedImage = await uploadToCloudinary(req.files[0].buffer);
     categoryData.image = uploadedImage;
@@ -55,59 +29,47 @@ const addCategory = catchAsync(async (req, res, next) => {
 });
 
 const getAllCategories = catchAsync(async (req, res) => {
-  const { brandId , isAdmin } = req.query;
+
 
   // If brandId is provided, find categories through products
-  if (brandId) {
-    // First get all product categories for this brand
-    const brandProducts = await Product.find({ brand: brandId }).distinct(
-      "category"
-    );
+  // if (brandId) {
+  //   // First get all product categories for this brand
+  //   const brandProducts = await Product.find({ brand: brandId }).distinct(
+  //     "category"
+  //   );
 
-    // Then get these categories with their subcategories
-    const categories = await Category.find({
-      $or: [
-        { _id: { $in: brandProducts } },
-        { parent: { $in: brandProducts } },
-        { _id: { $in: await Category.find({ _id: { $in: brandProducts }, isSubcategory: true }).distinct('parent') } }
-      ],
-    }).populate({
-      path: "subcategories",
-      populate: {
-        path: "subcategories",
-      },
-    });
+  //   // Then get these categories with their subcategories
+  //   const categories = await Category.find({
+  //     $or: [
+  //       { _id: { $in: brandProducts } },
+  //       { parent: { $in: brandProducts } },
+  //       { _id: { $in: await Category.find({ _id: { $in: brandProducts }, isSubcategory: true }).distinct('parent') } }
+  //     ],
+  //   }).populate({
+  //     path: "subcategories",
+  //     populate: {
+  //       path: "subcategories",
+  //     },
+  //   });
 
-    const rootCategories = categories.filter((cat) => !cat.parent);
 
-    return res.status(200).json({
-      success: true,
-      envelop: {
-        data: rootCategories,
-      },
-    });
-  }
+
+  //   return res.status(200).json({
+  //     success: true,
+  //     envelop: {
+  //       data: rootCategories,
+  //     },
+  //   });
+  // }
 
   // If no brandId, return all categories (existing logic)
-  const categories = await Category.find().populate({
-    path: "subcategories",
-    populate: {
-      path: "parent",
-    },
-  });
+  const categories = await Category.find().populate("subcategories");
 
-  let rootCategories;
-
-  if(isAdmin){
-    rootCategories = categories;
-  }else{
-    rootCategories = categories.filter((cat) => !cat.parent);
-  }
 
   res.status(200).json({
     success: true,
     envelop: {
-      data: rootCategories,
+      data: categories,
     },
   });
 });
@@ -141,7 +103,7 @@ const updateCategoryOffer = catchAsync(async (req, res, next) => {
 
 const editCategory = catchAsync(async (req, res, next) => {
   const { categoryId } = req.params;
-  const { name, description, offer, parent } = req.body;
+  const { name, description } = req.body;
 
   const category = await Category.findById(categoryId);
   if (!category) {
@@ -156,47 +118,11 @@ const editCategory = catchAsync(async (req, res, next) => {
     category.image = uploadedImage;
   }
 
-  // Handle parent category update
-  if (parent) {
-    // Prevent setting parent to itself or its own subcategory
-    if (parent === categoryId) {
-      return next(new AppError("Category cannot be its own parent", 400));
-    }
-
-    const parentCategory = await Category.findById(parent);
-    if (!parentCategory) {
-      return next(new AppError("Parent category not found", 404));
-    }
-
-    // Check if new parent is not one of its own subcategories
-    const subcategories = await category.getAllSubcategories();
-    if (subcategories.some((sub) => sub._id.toString() === parent)) {
-      return next(new AppError("Cannot set a subcategory as parent", 400));
-    }
-
-    category.parent = parent;
-    category.isSubcategory = true;
-  }
-
-  // Handle offer update
-  if (offer) {
-    if (
-      !offer.title ||
-      !offer.discountPercentage ||
-      !offer.startDate ||
-      !offer.endDate
-    ) {
-      return next(new AppError("All offer fields are required", 400));
-    }
-    category.offer = offer;
-  }
 
   await category.save();
 
-  // Fetch updated category with populated fields
+ 
   const updatedCategory = await Category.findById(categoryId)
-    .populate("parent")
-    .populate("subcategories");
 
   res.status(200).json({
     success: true,

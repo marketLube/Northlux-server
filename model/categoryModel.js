@@ -48,33 +48,24 @@ const categorySchema = new Schema(
       trim: true,
     },
     offer: offerSchema,
-    parent: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      default: null,
-    },
-    isSubcategory: {
-      type: Boolean,
-      default: false,
-    },
     image: {
       type: String, // This will store the image URL
       default: null,
     },
+    subcategories: [{
+      type: Schema.Types.ObjectId,
+      ref: "SubCategory",
+      required: false
+    }],
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 
-// Virtual for subcategories
-categorySchema.virtual("subcategories", {
-  ref: "Category",
-  localField: "_id",
-  foreignField: "parent",
-});
+
+  // Virtual for subcategories
+
 
 categorySchema.pre("save", async function (next) {
   if (this.isModified("offer")) {
@@ -104,25 +95,6 @@ categorySchema.pre("save", async function (next) {
   next();
 });
 
-// Add helper methods
-categorySchema.methods.getAllSubcategories = async function () {
-  return await this.model("Category").find({ parent: this._id });
-};
+const Category = mongoose.model("Category", categorySchema);
 
-categorySchema.methods.getFullPath = async function () {
-  const path = [this.name];
-  let currentCategory = this;
-
-  while (currentCategory.parent) {
-    currentCategory = await this.model("Category").findById(
-      currentCategory.parent
-    );
-    if (currentCategory) {
-      path.unshift(currentCategory.name);
-    }
-  }
-
-  return path.join(" > ");
-};
-
-module.exports = mongoose.model("Category", categorySchema);
+module.exports = Category;

@@ -77,7 +77,7 @@ const adminLogout = catchAsync(async (req, res, next) => {
 
 const fetchCategoriesAndBrands = catchAsync(async (req, res) => {
   // Fetch categories
-  const categories = await categoryModel.find({}, "_id name");
+  const categories = await categoryModel.find().populate("subcategories");
 
   // Fetch brands
   const brands = await Brand.find({}, "_id name");

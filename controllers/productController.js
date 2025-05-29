@@ -18,6 +18,7 @@ const addProduct = catchAsync(async (req, res, next) => {
     name,
     brand,
     category,
+    subcategory,
     description,
     variants: variantsArray,
     sku,
@@ -123,6 +124,7 @@ const addProduct = catchAsync(async (req, res, next) => {
     name,
     brand,
     category,
+    subcategory,
     description,
     images: productImages,
     createdBy,
@@ -271,7 +273,7 @@ const listProducts = catchAsync(async (req, res, next) => {
   }
 
   if (subcategoryId) {
-    filter.category = new mongoose.Types.ObjectId(subcategoryId);
+    filter.subcategory = new mongoose.Types.ObjectId(subcategoryId);
   }
 
   if (brandId) {

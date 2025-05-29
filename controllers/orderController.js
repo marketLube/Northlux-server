@@ -155,6 +155,7 @@ const placeOrder = catchAsync(async (req, res, next) => {
 
   const [product] = await productModel.aggregate(aggregationPipeline);
 
+
   //also check if the product or variant is out of stock
   if (product.stock < quantity) {
     return next(new AppError("insufficient stock", 400));
