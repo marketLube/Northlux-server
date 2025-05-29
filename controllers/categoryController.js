@@ -245,15 +245,16 @@ const deleteCategory = catchAsync(async (req, res, next) => {
     return next(new AppError("Category not found", 404));
   }
 
+  // Check if category has products
+  const productCount = await Product.countDocuments({ category: categoryId });
+  if (productCount > 0) {
+    return next(new AppError("Category has products, cannot delete", 400));
+  }
+
   // Check if category has subcategories
   const subcategories = await Category.find({ parent: categoryId });
   if (subcategories.length > 0) {
-    return next(
-      new AppError(
-        "Cannot delete category with subcategories. Please delete subcategories first.",
-        400
-      )
-    );
+    return next(new AppError("Category has subcategories, cannot delete", 400));
   }
 
   await Category.findByIdAndDelete(categoryId);

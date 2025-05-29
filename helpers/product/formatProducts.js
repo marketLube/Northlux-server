@@ -1,10 +1,10 @@
 const formatProductResponse = (product) => {
-  
   let hasVariants = false;
   const variants = product.variantsData || product.variants || [];
   if (Array.isArray(variants) && variants.length > 0) {
     hasVariants = true;
   }
+
 
   return {
     _id: product._id,

@@ -1,4 +1,5 @@
 const Category = require("../model/categoryModel");
+const Product = require("../model/productModel");
 const SubCategory = require("../model/subCategoryModel");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 
@@ -69,11 +70,23 @@ const updateSubCategory = catchAsync(async (req, res) => {
   });
 });
 
+
+const deleteSubCategory = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const productCount = await Product.countDocuments({ subcategory: id });
+  if (productCount > 0) {
+    return res.status(400).json({ message: "Subcategory has products, cannot delete" });
+  }
+  await SubCategory.findByIdAndDelete(id);
+  res.status(200).json({ message: "Subcategory deleted successfully" });
+});
+
 module.exports = {
   createSubCategory,
   getAllSubCategories,
   getSubCategoryById,
   updateSubCategory,
+  deleteSubCategory,
 };
 
 

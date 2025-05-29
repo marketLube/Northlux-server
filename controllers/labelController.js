@@ -101,6 +101,7 @@ const groupLabel = catchAsync(async (req, res, next) => {
     {
       $group: {
         _id: "$label.name",
+        labelId: { $first: "$label._id" },
         products: {
           $push: {
             _id: "$_id",
@@ -120,13 +121,23 @@ const groupLabel = catchAsync(async (req, res, next) => {
       }
     },
     {
+      $sort: {
+        _id: 1
+      }
+    },
+    {
       $project: {
-        label: "$_id",
+        label: {
+          name: "$_id",
+          id: "$labelId"
+        },
         products: 1,
         _id: 0
       }
     }
   ]);
+
+  console.log(result , "result>>>>");
 
   // Format the products using formatProductResponse
   const formattedResult = result.map(group => ({
@@ -140,10 +151,23 @@ const groupLabel = catchAsync(async (req, res, next) => {
   });
 });
 
+
+const deleteLabel = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const productCount = await ProductModel.countDocuments({ label: id });
+  if (productCount > 0) {
+    return res.status(400).json({ message: "Label has products, cannot delete" });
+  }
+  await LabelModel.findByIdAndDelete(id);
+  res.status(200).json({ message: "Label deleted successfully" });
+});
+
 module.exports = {
   addLabel,
   getLabels,
   editLabel,
   searchLabel,
   groupLabel,
+  deleteLabel,
 };

@@ -7,16 +7,10 @@ const fs = require("fs");
 
 
 const createOfferBanner = catchAsync(async (req, res, next) => {
-  const { title, subtitle, description, offerValue, offerType, link, image } = req.body;
+  const {  link } = req.body;
 
   const bannerData = {
-    title,
-    subtitle,
-    description,
-    offerValue,
-    offerType,
     link,
-    image,
   };
 
   if (req.files && req.files.length > 0) {
