@@ -538,6 +538,7 @@ const getProductDetails = catchAsync(async (req, res, next) => {
   // Get product details with populated fields
   const productDetails = await Product.findById(productId)
     .populate("category")
+    .populate("subcategory")
     .populate("createdBy", "username email role")
     .populate("variants")
     .populate("brand")

@@ -108,6 +108,7 @@ const groupLabel = catchAsync(async (req, res, next) => {
             name: "$name",
             description: "$description",
             price: "$price",
+            offerPrice: "$offerPrice",
             variants: "$variantsData",
             store: { $arrayElemAt: ["$store", 0] },
             brand: { $arrayElemAt: ["$brand", 0] },
@@ -137,7 +138,6 @@ const groupLabel = catchAsync(async (req, res, next) => {
     }
   ]);
 
-  console.log(result , "result>>>>");
 
   // Format the products using formatProductResponse
   const formattedResult = result.map(group => ({

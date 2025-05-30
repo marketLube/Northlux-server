@@ -64,7 +64,6 @@ const createOffer = catchAsync(async (req, res, next) => {
 
   const products = await Product.aggregate(aggregationPipeline);
 
-  console.log(products , "products>>>>");
 
   for (const product of products) {
     if (product.variants && product.variants.length > 0) {

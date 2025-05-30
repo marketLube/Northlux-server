@@ -6,7 +6,7 @@ const productSchema = new Schema(
     name: { type: String, required: true, unique: true },
     brand: { type: Schema.Types.ObjectId, ref: "Brand" },
     category: { type: Schema.Types.ObjectId, ref: "Category" },
-    subcategory: { type: Schema.Types.ObjectId, ref: "Subcategory" },
+    subcategory: { type: Schema.Types.ObjectId, ref: "SubCategory" },
     description: { type: String },
     variants: [{ type: Schema.Types.ObjectId, ref: "Variant" }],
     store: {
