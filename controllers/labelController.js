@@ -2,6 +2,7 @@ const { getAll } = require("../helpers/handlerFactory/handlerFactory");
 const formatProductResponse = require("../helpers/product/formatProducts");
 const LabelModel = require("../model/labelModel");
 const ProductModel = require("../model/productModel");
+const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 
 const addLabel = catchAsync(async (req, res, next) => {
@@ -44,6 +45,7 @@ const groupLabel = catchAsync(async (req, res, next) => {
         activeStatus: true
       }
     },
+
     {
       $lookup: {
         from: "labels",
@@ -102,6 +104,7 @@ const groupLabel = catchAsync(async (req, res, next) => {
       $group: {
         _id: "$label.name",
         labelId: { $first: "$label._id" },
+        createdAt:{$first:"$label.createdAt"},
         products: {
           $push: {
             _id: "$_id",
@@ -118,19 +121,18 @@ const groupLabel = catchAsync(async (req, res, next) => {
             activeStatus: "$activeStatus",
             isDeleted: "$isDeleted"
           }
-        }
+        },
       }
     },
-    {
-      $sort: {
-        _id: 1
-      }
-    },
+
+
+  
     {
       $project: {
         label: {
           name: "$_id",
-          id: "$labelId"
+          id: "$labelId",
+          createdAt: "$createdAt"
         },
         products: 1,
         _id: 0
@@ -145,6 +147,11 @@ const groupLabel = catchAsync(async (req, res, next) => {
     products: group.products.map(product => formatProductResponse(product))
   }));
 
+  formattedResult.sort((a, b) => {
+    const dateDiff = new Date(b.label.createdAt) - new Date(a.label.createdAt);
+    if (dateDiff !== 0) return dateDiff;
+    return a.label.name.localeCompare(b.label.name);
+  });
   res.status(200).json({
     status: 'success',
     data: formattedResult
@@ -154,6 +161,11 @@ const groupLabel = catchAsync(async (req, res, next) => {
 
 const deleteLabel = catchAsync(async (req, res, next) => {
   const { id } = req.params;
+
+
+  if(id == "67e10f6c5b3d36dda0b0c4cc"){
+    return next(new AppError("You are not authorized to delete this label", 403));
+  } 
 
   const productCount = await ProductModel.countDocuments({ label: id });
   if (productCount > 0) {

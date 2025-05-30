@@ -7,18 +7,32 @@ const fs = require("fs");
 
 
 const createOfferBanner = catchAsync(async (req, res, next) => {
-  const {  link, section } = req.body;
+  const { link, section } = req.body;
 
   const bannerData = {
     link,
     section: parseInt(section),
   };
 
-  if (req.files && req.files.length > 0) {
-    const imageFile = req.files[0];
-    const uploadedImage = await uploadToCloudinary(imageFile.buffer);
-    bannerData.image = uploadedImage;
+  if (!req.files || req.files.length < 2) {
+    return next(new AppError("Both desktop and mobile images are required", 400));
   }
+
+  // Process desktop image
+  const desktopImage = req.files.find(file => file.fieldname === 'image');
+  if (!desktopImage) {
+    return next(new AppError("Desktop image is required", 400));
+  }
+  const uploadedDesktopImage = await uploadToCloudinary(desktopImage.buffer);
+  bannerData.image = uploadedDesktopImage;
+
+  // Process mobile image
+  const mobileImage = req.files.find(file => file.fieldname === 'mobileImage');
+  if (!mobileImage) {
+    return next(new AppError("Mobile image is required", 400));
+  }
+  const uploadedMobileImage = await uploadToCloudinary(mobileImage.buffer);
+  bannerData.mobileImage = uploadedMobileImage;
 
   const newBanner = await OfferBanner.create(bannerData);
 
@@ -80,27 +94,42 @@ const deleteOfferBanner = catchAsync(async (req, res, next) => {
 
 const updateOfferBanner = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const { link, image, section } = req.body;
+  const { link, section } = req.body;
 
-  const banner = await OfferBanner.findById(id);
-  if (!banner) {
+  const bannerData = {
+    link,
+    section: parseInt(section),
+  };
+
+  if (req.files && req.files.length > 0) {
+    // Process desktop image if provided
+    const desktopImage = req.files.find(file => file.fieldname === 'image');
+    if (desktopImage) {
+      const uploadedDesktopImage = await uploadToCloudinary(desktopImage.buffer);
+      bannerData.image = uploadedDesktopImage;
+    }
+
+    // Process mobile image if provided
+    const mobileImage = req.files.find(file => file.fieldname === 'mobileImage');
+    if (mobileImage) {
+      const uploadedMobileImage = await uploadToCloudinary(mobileImage.buffer);
+      bannerData.mobileImage = uploadedMobileImage;
+    }
+  }
+
+  const updatedBanner = await OfferBanner.findByIdAndUpdate(
+    id,
+    bannerData,
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedBanner) {
     return next(new AppError("Banner not found", 404));
   }
 
-  if (req.files && req.files.length > 0) {
-    const imageFile = req.files[0];
-    const uploadedImage = await uploadToCloudinary(imageFile.buffer);
-    banner.image = uploadedImage;
-  }
-
-  banner.link = link || banner.link;
-  banner.image = image || banner.image;
-  banner.section = section || banner.section;
-  await banner.save();
-
   res.status(200).json({
     status: "success",
-    data: banner,
+    data: updatedBanner,
   });
 });
 

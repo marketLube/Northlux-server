@@ -4,10 +4,15 @@ const offerBannerSchema = new mongoose.Schema(
   {
     link: {
       type: String,
+      required: [true, "Link is required"],
     },
     image: {
       type: String,
-      required: [true, "Banner image is required"],
+      required: [true, "Desktop banner image is required"],
+    },
+    mobileImage: {
+      type: String,
+      required: [true, "Mobile banner image is required"],
     },
     section: {
       type: Number,

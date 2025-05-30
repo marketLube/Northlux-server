@@ -5,7 +5,7 @@ const catchAsync = require("../../utilities/errorHandlings/catchAsync");
 const getAll = (Model) => {
     return catchAsync(async (req, res, next) => {
 
-        const data = await Model.find();
+        const data = await Model.find().sort({ createdAt: -1 });
         res.status(200).json({
             status: "Success",
             length: data.length,
