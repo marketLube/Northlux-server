@@ -139,16 +139,16 @@ const addProduct = catchAsync(async (req, res, next) => {
 
   if (variantsArray && variantsArray.length > 0) {
     // Add variant stock validation
-    for (const variant of variantsArray) {
-      if (variant.stockStatus === "outofstock" && variant.stock > 0) {
-        return next(
-          new AppError(
-            "Variant stock status cannot be out of stock when stock quantity is greater than 0",
-            400
-          )
-        );
-      }
-    }
+    // for (const variant of variantsArray) {
+    //   if (variant.stockStatus === "outofstock" && variant.stock > 0) {
+    //     return next(
+    //       new AppError(
+    //         "Variant stock status cannot be out of stock when stock quantity is greater than 0",
+    //         400
+    //       )
+    //     );
+    //   }
+    // }
 
     // Parse the variants from strings to objects
     const parsedVariants = variantsArray;
@@ -165,6 +165,7 @@ const addProduct = catchAsync(async (req, res, next) => {
           attributes: variant.attributes,
           product: null, // Will be updated after product creation
           images: variantImagesMap[index] || [],
+          grossPrice: variant.grossPrice,
         };
 
         const newVariant = new Variant(variantData);

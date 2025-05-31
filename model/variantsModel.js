@@ -34,12 +34,13 @@ const variantSchema = new mongoose.Schema({
   },
   grossPrice: {
     type: Number,
+    required: true,
   },
   offer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Offer",
   },
-});
+} , { timestamps: true });
 
 const Variant = mongoose.model("Variant", variantSchema);
 module.exports = Variant;
