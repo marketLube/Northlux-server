@@ -20,7 +20,7 @@ const addressSchema = new mongoose.Schema({
   pincode: {
     type: Number,
     required: true,
-  },
+  }
 });
 
 const storeSchema = new mongoose.Schema(
@@ -51,6 +51,10 @@ const storeSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+    },
+    activeStatus: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }

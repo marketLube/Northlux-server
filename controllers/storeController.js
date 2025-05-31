@@ -8,7 +8,7 @@ const formatProductResponse = require("../helpers/product/formatProducts");
 const Order = require("../model/orderModel");
 
 const createStore = catchAsync(async (req, res, next) => {
-  const { store_name, email, address, store_number, login_number, password } =
+  const { store_name, email, address, store_number, login_number, password, activeStatus } =
     req.body;
 
   if (
@@ -17,7 +17,8 @@ const createStore = catchAsync(async (req, res, next) => {
     !password ||
     !address ||
     !store_number ||
-    !login_number
+    !login_number ||
+    !activeStatus
   ) {
     return next(new AppError("All fields are required", 400));
   }
@@ -29,6 +30,7 @@ const createStore = catchAsync(async (req, res, next) => {
     address,
     store_number,
     login_number,
+    activeStatus,
   });
 
   const newStore = await store.save();
@@ -54,6 +56,10 @@ const loginStore = catchAsync(async (req, res, next) => {
 
   if (!store) {
     return next(new AppError("Invalid phone or password", 401));
+  }
+
+  if (!store.activeStatus) {
+    return next(new AppError("Store is not active", 401));
   }
 
   //   const isPasswordCorrect = await store.comparePassword(password);
@@ -223,6 +229,7 @@ const getAllStores = catchAsync(async (req, res, next) => {
         createdAt: 1,
         updatedAt: 1,
         password: 1,
+        activeStatus: 1,
       },
     },
     {
@@ -249,9 +256,11 @@ const getAllStores = catchAsync(async (req, res, next) => {
 });
 
 const editStore = catchAsync(async (req, res, next) => {
-  const { store_name, email, address, store_number, login_number, password } =
+  const { store_name, email, address, store_number, login_number, password, activeStatus } =
     req.body;
-  if (!store_name || !email || !address || !store_number || !login_number) {
+
+  console.log(req.body);
+  if (!store_name || !email || !address || !store_number || !login_number || activeStatus === undefined || !password) {
     return next(new AppError("All fields are required", 400));
   }
   const { id } = req.params;
