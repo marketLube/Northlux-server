@@ -8,13 +8,30 @@ const Variant = require("../model/variantsModel");
 
 const createOffer = catchAsync(async (req, res, next) => {
   const { bannerImage, ...offerData } = req.body;
-
   if (typeof offerData.products === "string") {
     try {
       offerData.products = JSON.parse(offerData.products);
     } catch (e) {
       offerData.products = [offerData.products]; // fallback: single id as string
     }
+  }
+
+
+
+  if (offerData.offerType === "brandCategory") {
+    offerData.products = [];
+  }
+  if (offerData.offerType === "brand") {
+    offerData.category = null;
+    offerData.products = [];
+  }
+  if (offerData.offerType === "category") {
+    offerData.brand = null;
+    offerData.products = [];
+  }
+  if (offerData.offerType === "group") {
+    offerData.brand = null;
+    offerData.category = null;
   }
 
   if (req.files && req.files.length > 0) {
@@ -119,7 +136,7 @@ const createOffer = catchAsync(async (req, res, next) => {
 });
 
 const getAllOffers = catchAsync(async (req, res, next) => {
-  const offers = await Offer.find();
+  const offers = await Offer.find().populate("category").populate("brand");
   res.status(200).json({
     status: "success",
     data: offers,

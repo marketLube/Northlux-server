@@ -76,16 +76,39 @@ const loginStore = catchAsync(async (req, res, next) => {
 });
 
 const getAllStores = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10 } = req.query;
-  
+  const { page = 1, limit = 10, search = "" } = req.query;
+
+  let match = {};
+
+  if (search) {
+    match = {
+      $or: [
+        { store_name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$store_number" },
+              regex: search,
+              options: "i",
+            },
+          },
+        },
+      ],
+    };
+  }
+
   const stores = await storeModel.aggregate([
+    {
+      $match: match,
+    },
     {
       $lookup: {
         from: "products",
         localField: "_id",
         foreignField: "store",
-        as: "products"
-      }
+        as: "products",
+      },
     },
     {
       $lookup: {
@@ -95,28 +118,28 @@ const getAllStores = catchAsync(async (req, res, next) => {
         pipeline: [
           {
             $match: {
-              status: "delivered"
-            }
+              status: "delivered",
+            },
           },
           {
             $lookup: {
               from: "variants",
               localField: "variant",
               foreignField: "_id",
-              as: "variantDetails"
-            }
+              as: "variantDetails",
+            },
           },
           {
             $lookup: {
               from: "products",
               localField: "product",
               foreignField: "_id",
-              as: "productDetails"
-            }
-          }
+              as: "productDetails",
+            },
+          },
         ],
-        as: "orders"
-      }
+        as: "orders",
+      },
     },
     {
       $addFields: {
@@ -126,8 +149,8 @@ const getAllStores = catchAsync(async (req, res, next) => {
           $reduce: {
             input: "$orders",
             initialValue: 0,
-            in: { $add: ["$$value", "$$this.totalAmount"] }
-          }
+            in: { $add: ["$$value", "$$this.totalAmount"] },
+          },
         },
         totalProfit: {
           $reduce: {
@@ -144,20 +167,32 @@ const getAllStores = catchAsync(async (req, res, next) => {
                         "$$this.quantity",
                         {
                           $cond: {
-                            if: { $gt: [{ $size: "$$this.variantDetails" }, 0] },
-                            then: { $arrayElemAt: ["$$this.variantDetails.grossPrice", 0] },
-                            else: { $arrayElemAt: ["$$this.productDetails.grossPrice", 0] }
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      }
+                            if: {
+                              $gt: [{ $size: "$$this.variantDetails" }, 0],
+                            },
+                            then: {
+                              $arrayElemAt: [
+                                "$$this.variantDetails.grossPrice",
+                                0,
+                              ],
+                            },
+                            else: {
+                              $arrayElemAt: [
+                                "$$this.productDetails.grossPrice",
+                                0,
+                              ],
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
     },
     {
       $addFields: {
@@ -166,14 +201,11 @@ const getAllStores = catchAsync(async (req, res, next) => {
             if: { $eq: ["$totalRevenue", 0] },
             then: 0,
             else: {
-              $multiply: [
-                { $divide: ["$totalProfit", "$totalRevenue"] },
-                100
-              ]
-            }
-          }
-        }
-      }
+              $multiply: [{ $divide: ["$totalProfit", "$totalRevenue"] }, 100],
+            },
+          },
+        },
+      },
     },
     {
       $project: {
@@ -190,19 +222,19 @@ const getAllStores = catchAsync(async (req, res, next) => {
         profitPercentage: { $round: ["$profitPercentage", 2] },
         createdAt: 1,
         updatedAt: 1,
-        password: 1
-      }
+        password: 1,
+      },
     },
     {
-      $skip: (page - 1) * limit
+      $skip: (page - 1) * limit,
     },
     {
-      $limit: limit
-    }
+      $limit: limit,
+    },
   ]);
 
   // Get total count for pagination
-  const totalStores = await storeModel.countDocuments();
+  const totalStores = await storeModel.countDocuments(match);
 
   res.status(200).json({
     message: "Stores fetched successfully",
@@ -211,8 +243,8 @@ const getAllStores = catchAsync(async (req, res, next) => {
       currentPage: Number(page),
       totalPages: Math.ceil(totalStores / limit),
       totalStores,
-      limit: Number(limit)
-    }
+      limit: Number(limit),
+    },
   });
 });
 
@@ -271,10 +303,21 @@ const getStoreAndProducts = catchAsync(async (req, res, next) => {
   // --- Card Stats Aggregation ---
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const lastDayOfMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999
+  );
 
   // 1. Total delivered orders (all time)
-  const totalSales = await Order.countDocuments({ store: id, status: "delivered" });
+  const totalSales = await Order.countDocuments({
+    store: id,
+    status: "delivered",
+  });
 
   // 2. Monthly revenue and profit
   const monthlyOrders = await Order.aggregate([
@@ -354,7 +397,10 @@ const getStoreAndProducts = catchAsync(async (req, res, next) => {
             input: "$variantDetails",
             as: "variant",
             in: {
-              $multiply: ["$$variant.stock", { $ifNull: ["$$variant.offerPrice", "$$variant.price"] }],
+              $multiply: [
+                "$$variant.stock",
+                { $ifNull: ["$$variant.offerPrice", "$$variant.price"] },
+              ],
             },
           },
         },

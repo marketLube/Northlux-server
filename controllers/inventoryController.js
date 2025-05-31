@@ -31,15 +31,13 @@ const getInventory = catchAsync(async (req, res) => {
     matchConditions.$or = [
       { name: new RegExp(search, "i") },
       { sku: new RegExp(search, "i") },
+      { "variantDetails.sku": new RegExp(search, "i") }
     ];
   }
 
   const totalCount = await Product.countDocuments(matchConditions);
 
   const productsWithVariants = await Product.aggregate([
-    {
-      $match: matchConditions,
-    },
     {
       $lookup: {
         from: "variants",
@@ -48,6 +46,10 @@ const getInventory = catchAsync(async (req, res) => {
         as: "variantDetails",
       },
     },
+    {
+      $match: matchConditions,
+    },
+ 
     {
       $lookup: {
         from: "brands",

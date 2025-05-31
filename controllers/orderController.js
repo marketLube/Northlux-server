@@ -155,7 +155,6 @@ const placeOrder = catchAsync(async (req, res, next) => {
 
   const [product] = await productModel.aggregate(aggregationPipeline);
 
-
   //also check if the product or variant is out of stock
   if (product.stock < quantity) {
     return next(new AppError("insufficient stock", 400));
@@ -202,8 +201,8 @@ const placeOrder = catchAsync(async (req, res, next) => {
         productName: product.name,
         productImage: product.images[0],
         variantName: product.variants?.[0]?.attributes?.title || null,
-        brandName:product.brand?.name || null,
-        sku:product.sku || null,
+        brandName: product.brand?.name || null,
+        sku: product.sku || null,
         quantity,
         pricePerUnit: finalPrice,
         totalAmount,
@@ -250,11 +249,17 @@ const updateOrderStatus = catchAsync(async (req, res, next) => {
   }
 
   const updateField = type === "order" ? { status } : { paymentStatus: status };
-
   // Find the order first to get product/variant details
   const order = await orderModel.findById(orderId);
   if (!order) {
     return next(new AppError("Order not found.", 404));
+  }
+
+  if (status == order.status) {
+    return res.status(200).json({
+      message: `Order status is already ${status}.`,
+      order: order,
+    });
   }
 
   // Get the product for stock operations
@@ -266,11 +271,6 @@ const updateOrderStatus = catchAsync(async (req, res, next) => {
   // Handle stock changes based on status
   if (type === "order") {
     if (status === "confirmed") {
-      // Check if order was previously confirmed to avoid double stock reduction
-      if (order.status === "confirmed") {
-        return next(new AppError("Order is already confirmed.", 400));
-      }
-
       // Check if there's enough stock and reduce it
       if (order.variant) {
         // Handle variant stock
@@ -284,7 +284,7 @@ const updateOrderStatus = catchAsync(async (req, res, next) => {
 
         // Reduce variant stock
         variant.stock -= order.quantity;
-       
+
         if (variant.stock === 0) {
           variant.stockStatus = "outofstock";
         }
@@ -300,27 +300,19 @@ const updateOrderStatus = catchAsync(async (req, res, next) => {
           product.stockStatus = "outofstock";
         }
       }
-    } else if (["cancelled", "refunded"].includes(status)) {
-      // Only increase stock if the order was previously confirmed
-      if (
-        order.status === "confirmed" ||
-        order.status === "processed" ||
-        order.status === "shipped"
-      ) {
-        if (order.variant) {
-          // Handle variant stock
-          const variant = product.variants.find(
-            (v) => v._id.toString() === order.variant.toString()
-          );
-          if (!variant) {
-            return next(new AppError("Variant not found.", 404));
-          }
-          // Increase variant stock
-          variant.stock += order.quantity;
-        } else {
-          // Increase main product stock
-          product.stock += order.quantity;
+    } else if (["cancelled"].includes(status)) {
+      if (order.variant) {
+        // Increase variant stock
+        const variantData = await variantModel.findById(order.variant);
+
+        if (!variantData) {
+          return next(new AppError("Variant not found.", 404));
         }
+
+        variantData.stock += order.quantity;
+        await variantData.save();
+      } else {
+        product.stock += order.quantity;
       }
     }
 

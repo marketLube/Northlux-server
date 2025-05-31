@@ -13,16 +13,19 @@ const offerSchema = new mongoose.Schema(
       required: true,
     },
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
       required: function () {
-        return this.offerType === "category";
+        return this.offerType === "category" || this.offerType === "brandCategory";
       },
     },
     brand: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand",
       required: function () {
-        return this.offerType === "brand";
+        return this.offerType === "brand" || this.offerType === "brandCategory";
       },
+      default: null
     },
     products: {
       type: [String],
@@ -66,24 +69,24 @@ const offerSchema = new mongoose.Schema(
 );
 
 //? update document based on offerType
-offerSchema.pre("save", async function (next) {
-  if (this.offerType === "brandCategory") {
-    this.products = [];
-  }
-  if (this.offerType === "brand") {
-    this.category = "";
-    this.products = [];
-  }
-  if (this.offerType === "category") {
-    this.brand = "";
-    this.products = [];
-  }
-  if (this.offerType === "group") {
-    this.brand = "";
-    this.category = "";
-  }
-  next();
-});
+// offerSchema.pre("save", async function (next) {
+//   if (this.offerType === "brandCategory") {
+//     this.products = [];
+//   }
+//   if (this.offerType === "brand") {
+//     this.category = null;
+//     this.products = [];
+//   }
+//   if (this.offerType === "category") {
+//     this.brand = null;
+//     this.products = [];
+//   }
+//   if (this.offerType === "group") {
+//     this.brand = null;
+//     this.category = null;
+//   }
+//   next();
+// });
 
 
 const Offer = mongoose.model("Offer", offerSchema);
