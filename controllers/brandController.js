@@ -56,7 +56,7 @@ const createBrand = catchAsync(async (req, res, next) => {
 
 // Get all brands
 const getAllBrands = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 12, search } = req.query;
+  const { page = 1, limit = 18, search } = req.query;
 
 
   const pageNumber = parseInt(page, 10);
@@ -96,6 +96,7 @@ const getAllBrands = catchAsync(async (req, res, next) => {
   const priorityBrandCount = aggregation[0].priorityBrandCount[0]?.count || 0;
   const totalCount = aggregation[0].totalCount[0]?.count || 0;
   const totalPages = Math.ceil(totalCount / limitNumber);
+  
 
   res.status(200).json({
     status: "success",
@@ -105,6 +106,7 @@ const getAllBrands = catchAsync(async (req, res, next) => {
     currentPage: pageNumber,
     data: {
       brands,
+      totalCount,
     },
   });
 });
