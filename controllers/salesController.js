@@ -85,6 +85,42 @@ const salesReport = catchAsync(async (req, res, next) => {
       },
     },
     {
+      $lookup: {
+        from: "orders",
+        let: { productId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$product", "$$productId"] },
+                  { $eq: ["$status", "delivered"] },
+                  ...(matchConditions.createdAt ? [
+                    { $gte: ["$createdAt", new Date(startDate)] },
+                    { $lte: ["$createdAt", new Date(endDate)] }
+                  ] : []),
+                  ...(storeId && storeId !== "All Stores" ? [
+                    { $eq: ["$store", new mongoose.Types.ObjectId(storeId)] }
+                  ] : [])
+                ]
+              }
+            }
+          }
+        ],
+        as: "orders"
+      }
+    },
+    {
+      $addFields: {
+        totalQuantity: {
+          $sum: "$orders.quantity"
+        }
+      }
+    },
+    {
+      $sort: { totalQuantity: -1 }
+    },
+    {
       $skip: (Number(page) - 1) * Number(limit),
     },
     {
@@ -219,9 +255,6 @@ const salesReport = catchAsync(async (req, res, next) => {
     summaryMetrics.totalProducts > 0
       ? summaryMetrics.totalRevenue / summaryMetrics.totalProducts
       : 0;
-
-  // Sort products by totalQuantity in descending order
-  processedProducts.sort((a, b) => b.salesMetrics.totalQuantity - a.salesMetrics.totalQuantity);
 
   res.status(200).json({
     success: true,
