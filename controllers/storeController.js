@@ -117,6 +117,19 @@ const getAllStores = catchAsync(async (req, res, next) => {
       },
     },
     {
+      $addFields: {
+        totalProducts: {
+          $size: {
+            $filter: {
+              input: "$products",
+              as: "product",
+              cond: { $ne: ["$$product.isDeleted", true] }
+            }
+          }
+        }
+      }
+    },
+    {
       $lookup: {
         from: "orders",
         localField: "_id",
@@ -149,7 +162,6 @@ const getAllStores = catchAsync(async (req, res, next) => {
     },
     {
       $addFields: {
-        totalProducts: { $size: "$products" },
         totalDeliveredOrders: { $size: "$orders" },
         totalRevenue: {
           $reduce: {
