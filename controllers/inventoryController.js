@@ -18,7 +18,9 @@ const getInventory = catchAsync(async (req, res) => {
     storeId = req.user;
   }
 
-  const matchConditions = {};
+  const matchConditions = {
+    isDeleted: false,
+  };
 
   if (storeId && storeId !== "All Stores")
     matchConditions.store = new mongoose.Types.ObjectId(storeId);

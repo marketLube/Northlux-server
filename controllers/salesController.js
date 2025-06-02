@@ -20,7 +20,9 @@ const salesReport = catchAsync(async (req, res, next) => {
   }
 
   // Build match conditions for date range and store
-  const matchConditions = {};
+  const matchConditions = {
+    isDeleted: false,
+  };
   if (startDate && endDate) {
     matchConditions.createdAt = {
       $gte: new Date(startDate),
