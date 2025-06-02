@@ -12,6 +12,7 @@ const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 const Label = require("../model/labelModel");
 const storeModel = require("../model/storeModel");
+const SubCategory = require("../model/subCategoryModel");
 
 const adminRegister = catchAsync(async (req, res, next) => {
   const { username, email, phonenumber, password } = req.body;
@@ -114,6 +115,18 @@ const checkAdmin = catchAsync(async (req, res, next) => {
   res.status(200).json({ admin });
 });
 
+
+const adminUtilities = catchAsync(async (req, res, next) => {
+  const [stores, brands, categories , subcategories , labels] = await Promise.all([
+    storeModel.find({}, "_id store_name"),
+    Brand.find({}, "_id name"),
+    categoryModel.find().populate("subcategories"),
+    SubCategory.find(),
+    Label.find(),
+  ]);
+  res.status(200).json({ stores, brands, categories, subcategories, labels });
+});
+
 module.exports = {
   adminRegister,
   AdminLogin,
@@ -123,4 +136,5 @@ module.exports = {
   AdminDashboard,
   fetchCategoriesAndBrands,
   checkAdmin,
+  adminUtilities,
 };

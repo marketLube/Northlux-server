@@ -7,6 +7,7 @@ const {
   AdminDashboard,
   fetchCategoriesAndBrands,
   checkAdmin,
+  adminUtilities,
 } = require("../../controllers/adminController");
 const autheticateToken = require("../../middlewares/authMiddleware");
 const {
@@ -18,6 +19,7 @@ const {
 const { searchProducts } = require("../../controllers/productController");
 const adminRouter = require("express").Router();
 
+adminRouter.get("/adminutilities", adminUtilities);
 adminRouter.get("/getstores", getAllStores);
 adminRouter.get(
   "/getstoreandproducts/:id",

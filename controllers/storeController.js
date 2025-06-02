@@ -258,8 +258,6 @@ const getAllStores = catchAsync(async (req, res, next) => {
 const editStore = catchAsync(async (req, res, next) => {
   const { store_name, email, address, store_number, login_number, password, activeStatus } =
     req.body;
-
-  console.log(req.body);
   if (!store_name || !email || !address || !store_number || !login_number || activeStatus === undefined || !password) {
     return next(new AppError("All fields are required", 400));
   }

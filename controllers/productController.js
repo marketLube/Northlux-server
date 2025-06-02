@@ -205,11 +205,10 @@ const listProducts = catchAsync(async (req, res, next) => {
     brandId,
     role,
     store,
-    brand,
-    category,
     offerId,
     activeStatus,
   } = req.query;
+
 
 
   page = parseInt(page) || 1;
@@ -239,38 +238,22 @@ const listProducts = catchAsync(async (req, res, next) => {
     filter.store = new mongoose.Types.ObjectId(store);
   }
 
-  if (brand && brand !== "All Brands") {
-    filter.brand = new mongoose.Types.ObjectId(brand);
-  }
-
-  if (category && category !== "All Categories") {
-    filter.category = new mongoose.Types.ObjectId(category);
-  }
 
   if (categoryId && categoryId !== "All Categories") {
     filter.category = new mongoose.Types.ObjectId(categoryId);
-    const subcategories = await categoryModel.find({
-      parent: new mongoose.Types.ObjectId(categoryId),
-    });
-    if (subcategories.length > 0) {
-      filter.category = {
-        $in: [
-          new mongoose.Types.ObjectId(categoryId),
-          ...subcategories.map((subcategory) => subcategory._id)
-        ]
-      };
-    } else {
-      filter.category = new mongoose.Types.ObjectId(categoryId);
-    }
   }
 
-  if (subcategoryId) {
+  if (subcategoryId && subcategoryId !== "All Subcategories") {
     filter.subcategory = new mongoose.Types.ObjectId(subcategoryId);
   }
+
 
   if (brandId) {
     filter.brand = new mongoose.Types.ObjectId(brandId);
   }
+
+
+
 
   if (search) {
     filter.$or = [
