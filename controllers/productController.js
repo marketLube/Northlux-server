@@ -34,16 +34,14 @@ const addProduct = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.body;
 
-
-
   const queryConditions = [];
 
   if (sku !== undefined) {
-    queryConditions.push({ sku });
+    queryConditions.push({ sku, isDeleted: { $ne: true } });
   }
 
   if (name !== undefined) {
-    queryConditions.push({ name });
+    queryConditions.push({ name, isDeleted: { $ne: true } });
   }
 
   const productExists = await Product.findOne({
@@ -51,7 +49,12 @@ const addProduct = catchAsync(async (req, res, next) => {
   });
 
   if (productExists) {
-    return next(new AppError("Product already exists", 400));
+    if (productExists.name === name) {
+      return next(new AppError("Product name already exists", 400));
+    }
+    if (productExists.sku === sku) {
+      return next(new AppError("Product SKU already exists", 400));
+    }
   }
 
   if (variantsArray && variantsArray.length > 0) {
@@ -138,19 +141,7 @@ const addProduct = catchAsync(async (req, res, next) => {
   };
 
   if (variantsArray && variantsArray.length > 0) {
-    // Add variant stock validation
-    // for (const variant of variantsArray) {
-    //   if (variant.stockStatus === "outofstock" && variant.stock > 0) {
-    //     return next(
-    //       new AppError(
-    //         "Variant stock status cannot be out of stock when stock quantity is greater than 0",
-    //         400
-    //       )
-    //     );
-    //   }
-    // }
-
-    // Parse the variants from strings to objects
+   
     const parsedVariants = variantsArray;
 
     // Create variants with proper data structure

@@ -251,6 +251,15 @@ const updateOrderStatus = catchAsync(async (req, res, next) => {
   const updateField = type === "order" ? { status } : { paymentStatus: status };
   // Find the order first to get product/variant details
   const order = await orderModel.findById(orderId);
+
+  const productDetails = await productModel.findById(order.product);
+
+  if (!productDetails) {
+    return next(new AppError("Product not found.", 404));
+  }
+  if (productDetails.isDeleted) {
+    return next(new AppError("Product is deleted.", 404));
+  }
   if (!order) {
     return next(new AppError("Order not found.", 404));
   }
