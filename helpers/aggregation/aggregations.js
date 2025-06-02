@@ -330,6 +330,7 @@ const getDashBoardDetails = (user, role) => {
           $group: {
             _id: "$product",
             totalOrdered: { $sum: "$quantity" },
+            orderCount: { $sum: 1 }  // Count number of orders
           },
         },
         { $sort: { totalOrdered: -1 } }, // Sort in descending order
@@ -386,6 +387,7 @@ const getDashBoardDetails = (user, role) => {
             image: "$displayImage",
             price: "$displayPrice",
             totalOrdered: 1,
+            orderCount: 1
           },
         },
       ]);

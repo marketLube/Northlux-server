@@ -220,6 +220,9 @@ const salesReport = catchAsync(async (req, res, next) => {
       ? summaryMetrics.totalRevenue / summaryMetrics.totalProducts
       : 0;
 
+  // Sort products by totalQuantity in descending order
+  processedProducts.sort((a, b) => b.salesMetrics.totalQuantity - a.salesMetrics.totalQuantity);
+
   res.status(200).json({
     success: true,
     message: "Sales report fetched successfully",
