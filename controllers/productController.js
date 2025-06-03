@@ -26,8 +26,6 @@ const addProduct = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.body;
 
-  console.log(req.body , "req.body")
-console.log(req.files , "req.files")
   const queryConditions = [];
 
  
@@ -68,13 +66,7 @@ console.log(req.files , "req.files")
   // Process uploaded files
   for (const file of req.files) {
     const { fieldname } = file;
-
-    if (fieldname.startsWith("productImages")) {
-      const imageIndex = parseInt(fieldname.match(/\[(\d+)\]/)[1]);
-      const imageUrl = await uploadToCloudinary(file.buffer);
-
-      productImages[imageIndex] = imageUrl;
-    } else if (fieldname.startsWith("variants")) {
+    if (fieldname.startsWith("variants")) {
       const match = fieldname.match(/variants\[(\d+)\]\[images\]\[(\d+)\]/);
       if (match) {
         const variantIndex = match[1];
@@ -170,6 +162,9 @@ const listProducts = catchAsync(async (req, res, next) => {
     offerId,
     activeStatus,
   } = req.query;
+
+
+ 
 
 
 
@@ -471,7 +466,6 @@ const listProducts = catchAsync(async (req, res, next) => {
 
 const getProductDetails = catchAsync(async (req, res, next) => {
   const { productId } = req.params;
-  console.log(productId , "productId")
 
   // Get product details with populated fields
   const productDetails = await Product.findById(productId)
@@ -482,8 +476,6 @@ const getProductDetails = catchAsync(async (req, res, next) => {
     .populate("brand")
     .populate("label");
 
-
-    console.log(productDetails , "productDetails")
   if (!productDetails) {
     return next(new AppError("Product not found", 404));
   }
