@@ -49,7 +49,7 @@ const addProduct = catchAsync(async (req, res, next) => {
 
   if (variantsArray && variantsArray.length > 0) {
     const allSkus = variantsArray.map(v => v.sku);
-    const existingVariants = await Variant.find({ sku: { $in: allSkus } });
+    const existingVariants = await Variant.find({ sku: { $in: allSkus } , isDeleted: { $ne: true } });
 
     if (existingVariants.length > 0) {
       const duplicateSkus = existingVariants.map(v => v.sku).join(", ");
@@ -474,7 +474,8 @@ const getProductDetails = catchAsync(async (req, res, next) => {
     .populate("createdBy", "username email role")
     .populate("variants")
     .populate("brand")
-    .populate("label");
+    .populate("label")
+    .populate("store");
 
   if (!productDetails) {
     return next(new AppError("Product not found", 404));
@@ -492,6 +493,8 @@ const updateProduct = catchAsync(async (req, res, next) => {
   const { productId } = req.query;
   const updateData = req.body;
 
+  console.log(updateData , "updateData")
+
   if (updateData.variants) {
     try {
       await Promise.all(
@@ -507,16 +510,8 @@ const updateProduct = catchAsync(async (req, res, next) => {
             _id: { $ne: variant._id }, // Exclude the current variant
           });
 
-          const productSkuExists = await Product.findOne({
-            sku: variant.sku,
-            _id: { $ne: productId }, // Exclude the current variant
-          });
-
-          if (skuExists || productSkuExists) {
-            if (
-              skuExists?.sku === variant.sku ||
-              productSkuExists?.sku === variant.sku
-            ) {
+          if (skuExists) {
+            if (skuExists?.sku === variant.sku) {
               return Promise.reject(
                 `${variant?.attributes?.title}'s SKU ${variant.sku} already exists`
               );
@@ -531,22 +526,6 @@ const updateProduct = catchAsync(async (req, res, next) => {
     }
   }
 
-
-
-  // Add stock validation for variants
-  // if (updateData.variants) {
-  //   for (const variant of updateData.variants) {
-  //     if (variant.stockStatus === "outofstock" && variant.stock > 0) {
-  //       return next(
-  //         new AppError(
-  //           "Variant stock status cannot be out of stock when stock quantity is greater than 0",
-  //           400
-  //         )
-  //       );
-  //     }
-  //   }
-  // }
-
   const product = await Product.findById(productId).populate("variants");
 
   if (!product) {
@@ -557,13 +536,7 @@ const updateProduct = catchAsync(async (req, res, next) => {
   if (req.files && req.files.length > 0) {
     for (const file of req.files) {
       const { fieldname } = file;
-
-      if (fieldname.startsWith("productImages")) {
-        const imageIndex = parseInt(fieldname.match(/\[(\d+)\]/)[1]);
-        const imageUrl = await uploadToCloudinary(file.buffer);
-        if (!updateData.images) updateData.images = [...product.images];
-        updateData.images[imageIndex] = imageUrl;
-      } else if (fieldname.startsWith("variants")) {
+       if (fieldname.startsWith("variants")) {
         const match = fieldname.match(/variants\[(\d+)\]\[images\]\[(\d+)\]/);
         if (match) {
           const variantIndex = match[1];
@@ -586,7 +559,6 @@ const updateProduct = catchAsync(async (req, res, next) => {
   let variantIds = [];
   let newVariants = [];
   if (updateData.variants) {
-    // Use Promise.all to handle async operations properly
     await Promise.all(
       updateData.variants.map(async (variant, index) => {
         if (variant._id) {
@@ -604,9 +576,9 @@ const updateProduct = catchAsync(async (req, res, next) => {
             runValidators: true,
           });
         } else {
-          // For new variants
+        
           variant.product = productId;
-          // Add images from variantImagesMap if any
+      
           if (variantImagesMap[index]) {
             variant.images = variantImagesMap[index].filter((img) => img);
           }
@@ -616,7 +588,7 @@ const updateProduct = catchAsync(async (req, res, next) => {
     );
   }
 
-  // Create new variants
+
   const newVariantIds = await Promise.all(
     newVariants.map(async (variant) => {
       const newVariant = new Variant(variant);

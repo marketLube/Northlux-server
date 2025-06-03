@@ -5,7 +5,6 @@ const variantSchema = new mongoose.Schema({
   sku: {
     type: String,
     required: true,
-    unique: true,
   },
   price: {
     type: Number,
@@ -39,6 +38,10 @@ const variantSchema = new mongoose.Schema({
   offer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Offer",
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
   },
 } , { timestamps: true });
 
