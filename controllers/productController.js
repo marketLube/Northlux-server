@@ -19,26 +19,18 @@ const addProduct = catchAsync(async (req, res, next) => {
     brand,
     category,
     subcategory,
-    description,
     variants: variantsArray,
-    sku,
-    price,
-    offerPrice,
-    stock,
     label,
-    units,
-    stockStatus,
     store,
-    grossPrice,
     priority,
     activeStatus,
   } = req.body;
 
+  console.log(req.body , "req.body")
+console.log(req.files , "req.files")
   const queryConditions = [];
 
-  if (sku !== undefined) {
-    queryConditions.push({ sku, isDeleted: { $ne: true } });
-  }
+ 
 
   if (name !== undefined) {
     queryConditions.push({ name, isDeleted: { $ne: true } });
@@ -58,32 +50,14 @@ const addProduct = catchAsync(async (req, res, next) => {
   }
 
   if (variantsArray && variantsArray.length > 0) {
-    try {
-      await Promise.all(
-        variantsArray.map(async (variant) => {
-          const skuExists =
-            (await Variant.findOne({
-              $or: [
-                { sku: variant.sku },
-                { "attributes.title": variant.attributes.title },
-              ],
-            })) ||
-            (await Product.findOne({
-              $or: [{ sku: variant.sku }],
-            }));
-          if (skuExists) {
-            if (skuExists.sku === variant.sku) {
-              return Promise.reject(
-                `${variant?.attributes?.title}'s SKU ${variant.sku} already exists`
-              );
-            } else {
-              return Promise.reject(`Variant Title already exists`);
-            }
-          }
-        })
+    const allSkus = variantsArray.map(v => v.sku);
+    const existingVariants = await Variant.find({ sku: { $in: allSkus } });
+
+    if (existingVariants.length > 0) {
+      const duplicateSkus = existingVariants.map(v => v.sku).join(", ");
+      return next(
+        new AppError(`Duplicate SKU(s) found: ${duplicateSkus}`, 400)
       );
-    } catch (err) {
-      return next(new AppError(err, 400));
     }
   }
 
@@ -128,14 +102,9 @@ const addProduct = catchAsync(async (req, res, next) => {
     brand,
     category,
     subcategory,
-    description,
-    images: productImages,
     createdBy,
     label,
-    units,
-    stockStatus,
     store,
-    grossPrice,
     priority,
     activeStatus,
   };
@@ -165,15 +134,8 @@ const addProduct = catchAsync(async (req, res, next) => {
       })
     );
     productData.variants = variantIds;
-  } else {
-    // Handle products without variants
-    productData.sku = sku;
-    productData.price = price;
-    productData.offerPrice = offerPrice;
-    productData.stock = stock;
-  }
+  } 
 
-  // Create and save the product
   const newProduct = new Product(productData);
   await newProduct.save();
 
@@ -509,6 +471,7 @@ const listProducts = catchAsync(async (req, res, next) => {
 
 const getProductDetails = catchAsync(async (req, res, next) => {
   const { productId } = req.params;
+  console.log(productId , "productId")
 
   // Get product details with populated fields
   const productDetails = await Product.findById(productId)
@@ -519,6 +482,8 @@ const getProductDetails = catchAsync(async (req, res, next) => {
     .populate("brand")
     .populate("label");
 
+
+    console.log(productDetails , "productDetails")
   if (!productDetails) {
     return next(new AppError("Product not found", 404));
   }
