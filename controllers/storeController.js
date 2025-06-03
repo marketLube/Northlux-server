@@ -363,6 +363,7 @@ const getStoreAndProducts = catchAsync(async (req, res, next) => {
         as: "productDetails",
       },
     },
+    
     {
       $project: {
         totalAmount: 1,
@@ -391,7 +392,7 @@ const getStoreAndProducts = catchAsync(async (req, res, next) => {
     {
       $match: {
         store: new mongoose.Types.ObjectId(id),
-        isDeleted: { $ne: true },
+        isDeleted: false,
       },
     },
     {
@@ -442,7 +443,7 @@ const getStoreAndProducts = catchAsync(async (req, res, next) => {
     {
       $match: {
         store: new mongoose.Types.ObjectId(id),
-        // isDeleted: false,
+        isDeleted: false,
         ...searchCondition,
       },
     },
