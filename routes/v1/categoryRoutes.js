@@ -14,31 +14,31 @@ const categoryRouter = require("express").Router();
 
 categoryRouter.post(
   "/addcategory",
-  autheticateToken(["admin"]),
+  autheticateToken(["admin" , "store"]),
   upload.any(),
   addCategory
 );
 categoryRouter.get("/allcategories", getAllCategories);
 categoryRouter.patch(
   "/addoffer/:categoryId",
-  autheticateToken(["admin"]),
+  autheticateToken(["admin" , "store"]),
   updateCategoryOffer
 );
 categoryRouter.patch(
   "/editcategory/:categoryId",
-  autheticateToken(["admin"]),
+  autheticateToken(["admin" , "store"]),
   upload.any(),
   editCategory
 );
 categoryRouter.patch(
   "/removeoffer/:categoryId",
-  autheticateToken(["admin"]),
+  autheticateToken(["admin" , "store"]),
   removeOfferFromCategory
 );
 categoryRouter.get("/search", searchCategory);
 categoryRouter.delete(
   "/deletecategory/:categoryId",
-  autheticateToken(["admin"]),
+  autheticateToken(["admin" , "store"]),
   deleteCategory
 );
 

@@ -49,13 +49,13 @@ productRouter.delete(
 
 productRouter.patch(
   "/soft-delete",
-  autheticateToken(["admin"]),
+  autheticateToken(["admin" , "store"]),
   softDeleteProduct
 );
 
 productRouter.patch(
   "/update-variant/:variantId",
-  autheticateToken(["admin"]),
+  autheticateToken(["admin" , "store"]),
   updateVariant
 );
 

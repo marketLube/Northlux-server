@@ -11,12 +11,12 @@ const offerBannerRouter = require("express").Router();
 
 offerBannerRouter
   .route("/")
-  .post(autheticateToken(["admin"]), upload.any(), createOfferBanner)
+  .post(autheticateToken(["admin" , "store"]), upload.any(), createOfferBanner)
   .get(getAllOfferBanners);
 
 offerBannerRouter
   .route("/:id")
-  .delete(autheticateToken(["admin"]), deleteOfferBanner)
-  .patch(autheticateToken(["admin"]), upload.any(), updateOfferBanner);
+  .delete(autheticateToken(["admin" , "store"]), deleteOfferBanner)
+  .patch(autheticateToken(["admin" , "store"]), upload.any(), updateOfferBanner);
 
 module.exports = offerBannerRouter;

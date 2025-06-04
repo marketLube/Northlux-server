@@ -12,13 +12,13 @@ const bannerRouter = require("express").Router();
 
 bannerRouter
   .route("/")
-  .post(autheticateToken(["admin"]), upload.any(), createBanner)
+  .post(autheticateToken(["admin" , "store"]), upload.any(), createBanner)
   .get(getAllBanners);
 
 bannerRouter
   .route("/:id")
-  .delete(autheticateToken(["admin"]), deleteBanner)
-  .patch(autheticateToken(["admin"]), upload.any(), updateBanner);
+  .delete(autheticateToken(["admin" , "store"]), deleteBanner)
+  .patch(autheticateToken(["admin" , "store"]), upload.any(), updateBanner);
 
 bannerRouter.route("/get-all-banners-by-category").get(getAllBannersByCategory);
 

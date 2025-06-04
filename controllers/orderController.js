@@ -148,7 +148,7 @@ const placeOrder = catchAsync(async (req, res, next) => {
         variants: 1,
         stock: 1,
         brand: { $arrayElemAt: ["$brand", 0] },
-        sku: 1,
+        sku: "$variants.sku",
       },
     },
   ];
@@ -198,7 +198,7 @@ const placeOrder = catchAsync(async (req, res, next) => {
     data: {
       order: {
         orderId,
-        productName: product.name,
+        productName: product.name + " " + product.variants?.[0]?.attributes?.title || null,
         productImage: product.images[0],
         variantName: product.variants?.[0]?.attributes?.title || null,
         brandName: product.brand?.name || null,
