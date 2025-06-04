@@ -8,6 +8,7 @@ const {
   getGroupedProductsByLabel,
   searchProducts,
   softDeleteProduct,
+  updateVariant,
 } = require("../../controllers/productController");
 const autheticateToken = require("../../middlewares/authMiddleware");
 const upload = require("../../middlewares/multer");
@@ -51,4 +52,11 @@ productRouter.patch(
   autheticateToken(["admin"]),
   softDeleteProduct
 );
+
+productRouter.patch(
+  "/update-variant/:variantId",
+  autheticateToken(["admin"]),
+  updateVariant
+);
+
 module.exports = productRouter;

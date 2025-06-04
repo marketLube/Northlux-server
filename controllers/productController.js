@@ -26,26 +26,7 @@ const addProduct = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.body;
 
-  const queryConditions = [];
 
- 
-
-  if (name !== undefined) {
-    queryConditions.push({ name, isDeleted: { $ne: true } });
-  }
-
-  const productExists = await Product.findOne({
-    $or: queryConditions,
-  });
-
-  if (productExists) {
-    if (productExists.name === name) {
-      return next(new AppError("Product name already exists", 400));
-    }
-    if (productExists.sku === sku) {
-      return next(new AppError("Product SKU already exists", 400));
-    }
-  }
 
   if (variantsArray && variantsArray.length > 0) {
     const allSkus = variantsArray.map(v => v.sku);
@@ -240,6 +221,7 @@ const listProducts = catchAsync(async (req, res, next) => {
         as: "variantsData",
       },
     },
+
     {
       $addFields: {
         effectivePrice: {
@@ -493,7 +475,8 @@ const updateProduct = catchAsync(async (req, res, next) => {
   const { productId } = req.query;
   const updateData = req.body;
 
-  console.log(updateData , "updateData")
+
+
 
   if (updateData.variants) {
     try {
@@ -501,23 +484,19 @@ const updateProduct = catchAsync(async (req, res, next) => {
         updateData.variants.map(async (variant) => {
           const queryConditions = [
             { sku: variant.sku },
-            { "attributes.title": variant.attributes.title },
           ];
 
           // Exclude the current variant from the check
           const skuExists = await Variant.findOne({
             $or: queryConditions,
-            _id: { $ne: variant._id }, // Exclude the current variant
+            _id: { $ne: variant._id }, 
+            isDeleted: { $ne: true },
           });
 
-          if (skuExists) {
-            if (skuExists?.sku === variant.sku) {
-              return Promise.reject(
+          if (skuExists) { 
+            return Promise.reject(
                 `${variant?.attributes?.title}'s SKU ${variant.sku} already exists`
               );
-            } else {
-              return Promise.reject(`Variant Title already exists`);
-            }
           }
         })
       );
@@ -804,6 +783,33 @@ const softDeleteProduct = catchAsync(async (req, res, next) => {
   });
 });
 
+const updateVariant = catchAsync(async (req, res, next) => {
+  const { variantId } = req.params;
+
+  const product = await Product.findOne({
+    variants: { $in: variantId },
+  });
+
+  if (!product) {
+    return next(new AppError("Product not found", 404));
+  }
+
+  product.variants = product.variants.filter((id) => id.toString() !== variantId);
+
+  await product.save(); 
+
+  const variant = await Variant.findByIdAndUpdate(variantId, {
+    isDeleted: true,
+  });
+
+  res.status(200).json({
+    message: "Variant deleted successfully",
+  });
+});
+
+
+
+
 module.exports = {
   addProduct,
   listProducts,
@@ -814,4 +820,5 @@ module.exports = {
   getGroupedProductsByLabel,
   searchProducts,
   softDeleteProduct,
+  updateVariant,
 };
