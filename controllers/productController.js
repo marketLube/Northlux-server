@@ -221,6 +221,27 @@ const listProducts = catchAsync(async (req, res, next) => {
         as: "variantsData",
       },
     },
+    {
+      $lookup: {
+        from: "stores",
+        localField: "store",
+        foreignField: "_id",
+        as: "storeData",
+      },
+    },
+
+    {
+      $unwind: {
+        path: "$storeData",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    {
+      $match: {
+        "storeData.activeStatus": true,
+        },
+    },
 
     {
       $addFields: {
@@ -388,6 +409,25 @@ const listProducts = catchAsync(async (req, res, next) => {
       },
     },
     {
+      $lookup: {
+        from: "stores",
+        localField: "store",
+        foreignField: "_id",
+        as: "storeData",
+      },
+    },
+    {
+      $unwind: {
+        path: "$storeData",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "storeData.activeStatus": true,
+      },
+    },
+    {
       $addFields: {
         effectivePrice: {
           $cond: {
@@ -418,6 +458,7 @@ const listProducts = catchAsync(async (req, res, next) => {
     Product.aggregate(aggregationPipeline),
     Product.aggregate(countPipeline),
   ]);
+
 
   // Use the count from countResult instead of products.length
   const totalProducts = countResult[0]?.total || 0;
