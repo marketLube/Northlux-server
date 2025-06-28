@@ -7,6 +7,7 @@ const {
   cancelOrder,
   orderStats,
   updateOrder,
+  deleteEnquiry
 } = require("../../controllers/orderController");
 const autheticateToken = require("../../middlewares/authMiddleware");
 
@@ -42,5 +43,5 @@ orderRouter.post(
 );
 
 orderRouter.patch("/update-order/:orderId", autheticateToken(["admin","store"]), updateOrder);
-
+orderRouter.delete("/delete-enquiry/:enquiryId", autheticateToken(["admin","store"]), deleteEnquiry);
 module.exports = orderRouter;

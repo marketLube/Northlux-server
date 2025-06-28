@@ -6,65 +6,7 @@ const catchAsync = require("../utilities/errorHandlings/catchAsync");
 const { getOrderStats } = require("../helpers/aggregation/aggregations");
 const { default: mongoose } = require("mongoose");
 
-//     const userId = req.user
-//     const { products, address, paymentMethod, transactionId } = req.body
-//     if (!products) {
-//         return next(new AppError("All fields are required", 400))
-//     }
-//     const productIds = products.map(p => new mongoose.Types.ObjectId(p.productId));
-//     const productDetails = await productModel.aggregate([
-//         { $match: { _id: { $in: productIds } } },
-//         {
-//             $project: {
-//                 name: 1,
-//                 offerPrice: 1,
-//                 stock: 1,
-//             }
-//         }
-//     ]);
 
-//     if (productDetails.length !== products.length) return next(new AppError("Invalid product selection", 400));
-
-//     let totalAmount = 0;
-//     const orderProducts = [];
-
-//     const bulkOperations = productDetails.map(product => {
-//         const item = products.find(p => p.productId === product._id.toString());
-
-//         if (!item) next(new AppError(`Product not found: ${product._id}`));
-//         if (product.quantity < item.quantity) next(new AppError(`Insufficient stock for ${product.name}`));
-
-//         totalAmount += product.offerPrice * item.quantity;
-//         orderProducts.push({ productId: product._id, quantity: item.quantity, price: product.offerPrice });
-
-//         // Reduce stock using bulk update
-//         return {
-//             updateOne: {
-//                 filter: { _id: product._id },
-//                 update: { $inc: { stock: -item.quantity } }
-//             }
-//         };
-//     });
-
-//     // Perform bulk stock update
-//     await productModel.bulkWrite(bulkOperations);
-
-//     const newOrder = new orderModel({
-//         userId,
-//         products: orderProducts,
-//         // address,
-//         totalAmount,
-//         // paymentDetails: {
-//         //     method: paymentMethod,
-//         //     status: paymentMethod === "cod" ? "pending" : "completed",
-//         // }
-//     })
-
-//     const orderPlaced = await newOrder.save()
-
-//     res.status(201).json({ message: "Order Placed", orderPlaced })
-
-// });
 
 const placeOrder = catchAsync(async (req, res, next) => {
   const { productId, variantId, quantity } = req.body;
@@ -264,9 +206,16 @@ const updateOrderStatus = catchAsync(async (req, res, next) => {
     return next(new AppError("Order not found.", 404));
   }
 
-  if (status == order.status) {
+  if (type == "order" && status == order.status) {
     return res.status(200).json({
       message: `Order status is already ${status}.`,
+      order: order,
+    });
+  }
+
+  if(type == "payment" && status == order.paymentStatus){
+    return res.status(200).json({
+      message: `Payment status is already ${status}.`,
       order: order,
     });
   }
@@ -353,6 +302,7 @@ const filterOrders = catchAsync(async (req, res, next) => {
     page = 1,
     limit = 10,
     store,
+    type,
   } = req.query;
 
   let filterCriteria = {};
@@ -361,9 +311,18 @@ const filterOrders = catchAsync(async (req, res, next) => {
     filterCriteria.store = new mongoose.Types.ObjectId(req.user);
   }
 
-  if (status) {
+  if(type === "enquiry"){
+    filterCriteria.status = "pending";
+  }else{
+    filterCriteria.status = { $ne: "pending" };
+  }
+
+  if (status && type !== "enquiry") {
     filterCriteria.status = status;
   }
+
+ 
+
   if (category) {
     filterCriteria.category = new mongoose.Types.ObjectId(category);
   }
@@ -626,73 +585,6 @@ const cancelOrder = catchAsync(async (req, res, next) => {
   });
 });
 
-// const getAllOrders = catchAsync(async (req, res, next) => {
-//   // Get page and limit from query params, set defaults if not provided
-//   const page = parseInt(req.query.page) || 1;
-//   const limit = parseInt(req.query.limit) || 10;
-//   const skip = (page - 1) * limit;
-
-//   try {
-//     // Get total count for pagination
-//     const totalOrders = await orderModel.countDocuments();
-//     const totalPages = Math.ceil(totalOrders / limit);
-
-//     // Fetch orders with pagination and populate necessary fields
-//     const orders = await orderModel
-//       .find()
-//       .populate({
-//         path: "user",
-//         select: "username email phone", // Add the fields you want from user
-//       })
-//       .populate({
-//         path: "products.productId",
-//         select: "name images price offerPrice variant", // Add the fields you want from product
-//         populate: {
-//           path: "category",
-//           select: "name",
-//         },
-//       })
-//       .populate({
-//         path: "products.variantId",
-//       })
-//       .sort({ createdAt: -1 }) // Sort by newest first
-//       .skip(skip)
-//       .limit(limit);
-
-//     // Calculate pagination info
-//     const paginationInfo = {
-//       currentPage: page,
-//       totalPages,
-//       totalOrders,
-//       hasNextPage: page < totalPages,
-//       hasPrevPage: page > 1,
-//       nextPage: page < totalPages ? page + 1 : null,
-//       prevPage: page > 1 ? page - 1 : null,
-//       limit,
-//     };
-
-//     // Group orders by status for analytics
-//     const orderAnalytics = {
-//       total: totalOrders,
-//       completed: await orderModel.countDocuments({ status: "delivered" }),
-//       confirmed: await orderModel.countDocuments({ status: "processing" }),
-//       cancelled: await orderModel.countDocuments({ status: "cancelled" }),
-//       refunded: await orderModel.countDocuments({ status: "refunded" }),
-//     };
-
-//     res.status(200).json({
-//       status: "success",
-//       message: "Orders fetched successfully",
-//       data: {
-//         orders,
-//         pagination: paginationInfo,
-//         analytics: orderAnalytics,
-//       },
-//     });
-//   } catch (error) {
-//     return next(new AppError("Error fetching orders", 500));
-//   }
-// });
 
 const orderStats = catchAsync(async (req, res, next) => {
   const { user, role } = req;
@@ -732,6 +624,16 @@ const updateOrder = catchAsync(async (req, res, next) => {
   });
 });
 
+const deleteEnquiry = catchAsync(async (req, res, next) => {
+  const { enquiryId } = req.params;
+  const enquiry = await orderModel.findByIdAndDelete(enquiryId);
+  res.status(200).json({
+    message: "Enquiry deleted successfully",
+    enquiry,
+  });
+});
+
+
 module.exports = {
   placeOrder,
   updateOrderStatus,
@@ -741,4 +643,5 @@ module.exports = {
   cancelOrder,
   orderStats,
   updateOrder,
+  deleteEnquiry
 };
