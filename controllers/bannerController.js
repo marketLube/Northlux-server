@@ -1,5 +1,5 @@
 const Banner = require("../model/bannerModel");
-const uploadToCloudinary = require("../utilities/cloudinaryUpload");
+const {uploadToCloudinary, deleteFromS3} = require("../utilities/cloudinaryUpload");
 const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 const path = require("path");
@@ -27,7 +27,9 @@ const createBanner = catchAsync(async (req, res, next) => {
     
     // Handle images based on fieldname
     for (const file of req.files) {
-      const uploadedImage = await uploadToCloudinary(file.buffer);
+      const uploadedImage = await uploadToCloudinary(file.buffer, {
+        folder: (file?.fieldname === "image" || file?.fieldname === "editImage") ? "Northlux/banners/desktop" : "Northlux/banners/mobile",
+      });
       
       switch (file.fieldname) {
         case 'image':
@@ -64,25 +66,36 @@ const getAllBanners = catchAsync(async (req, res, next) => {
 
 const deleteBanner = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const banner = await Banner.findById(id);
 
+  // Validate ID format
+  if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    return next(new AppError("Invalid banner ID format", 400));
+  }
+
+  const banner = await Banner.findById(id);
   if (!banner) {
     return next(new AppError("Banner not found", 404));
   }
 
-  if (banner.image) {
-    const imagePath = path.join("public", banner.image);
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-    }
+  // Delete images in parallel if they exist
+  const deletePromises = [];
+  if (banner.image) deletePromises.push(deleteFromS3(banner.image));
+  if (banner.mobileImage) deletePromises.push(deleteFromS3(banner.mobileImage));
+
+  try {
+    // Delete images and banner in parallel
+    await Promise.all([
+      ...deletePromises,
+      Banner.findByIdAndDelete(id)
+    ]);
+
+    res.status(200).json({
+      status: "success",
+      message: "Banner deleted successfully",
+    });
+  } catch (error) {
+    return next(new AppError("Failed to delete banner or associated images", 500));
   }
-
-  await banner.deleteOne();
-
-  res.status(200).json({
-    status: "success",
-    message: "Banner deleted successfully",
-  });
 });
 
 const updateBanner = catchAsync(async (req, res, next) => {
@@ -98,7 +111,9 @@ const updateBanner = catchAsync(async (req, res, next) => {
     
     // Handle images based on fieldname
     for (const file of req.files) {
-      const uploadedImage = await uploadToCloudinary(file.buffer);
+      const uploadedImage = await uploadToCloudinary(file.buffer, {
+        folder: (file?.fieldname === "image" || file?.fieldname === "editImage") ? "Northlux/banners/desktop" : "Northlux/banners/mobile",
+      });
       
       switch (file.fieldname) {
         case 'image':

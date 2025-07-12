@@ -1,5 +1,5 @@
 const Brand = require("../model/brandModel");
-const uploadToCloudinary = require("../utilities/cloudinaryUpload");
+const {uploadToCloudinary} = require("../utilities/cloudinaryUpload");
 const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 // const { saveImage } = require("../utilities/imageUpload"); // Use the same helper from categories

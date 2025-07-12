@@ -6,7 +6,7 @@ const {
 const Product = require("../model/productModel");
 const productModel = require("../model/productModel");
 const Variant = require("../model/variantsModel");
-const uploadToCloudinary = require("../utilities/cloudinaryUpload");
+const { uploadMultipleToS3 } = require("../utilities/cloudinaryUpload");
 const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 const mongoose = require("mongoose");
@@ -26,11 +26,9 @@ const addProduct = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.body;
 
-
-
   if (variantsArray && variantsArray.length > 0) {
     const allSkus = variantsArray.map(v => v.sku);
-    const existingVariants = await Variant.find({ sku: { $in: allSkus } , isDeleted: { $ne: true } });
+    const existingVariants = await Variant.find({ sku: { $in: allSkus }, isDeleted: { $ne: true } });
 
     if (existingVariants.length > 0) {
       const duplicateSkus = existingVariants.map(v => v.sku).join(", ");
@@ -41,10 +39,10 @@ const addProduct = catchAsync(async (req, res, next) => {
   }
 
   const createdBy = req.user;
-  const productImages = [];
   const variantImagesMap = {};
 
-  // Process uploaded files
+  // Group files by variant
+  const variantFiles = {};
   for (const file of req.files) {
     const { fieldname } = file;
     if (fieldname.startsWith("variants")) {
@@ -53,11 +51,26 @@ const addProduct = catchAsync(async (req, res, next) => {
         const variantIndex = match[1];
         const imageIndex = parseInt(match[2]);
 
-        if (!variantImagesMap[variantIndex]) {
-          variantImagesMap[variantIndex] = [];
+        if (!variantFiles[variantIndex]) {
+          variantFiles[variantIndex] = [];
         }
-        const imageUrl = await uploadToCloudinary(file.buffer);
-        variantImagesMap[variantIndex][imageIndex] = imageUrl;
+        variantFiles[variantIndex][imageIndex] = file;
+      }
+    }
+  }
+
+  // Upload images for each variant
+  for (const [variantIndex, files] of Object.entries(variantFiles)) {
+    const filteredFiles = files.filter(file => file); // Remove any undefined entries
+    if (filteredFiles.length > 0) {
+      try {
+        const imageUrls = await uploadMultipleToS3(filteredFiles, {
+          folder: `Northlux/products/${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}/variant-${variantIndex}`
+        });
+        variantImagesMap[variantIndex] = imageUrls;
+      } catch (error) {
+        console.error(`Error uploading images for variant ${variantIndex}:`, error);
+        return next(new AppError(`Failed to upload images for variant ${parseInt(variantIndex) + 1}`, 500));
       }
     }
   }
@@ -83,7 +96,6 @@ const addProduct = catchAsync(async (req, res, next) => {
   };
 
   if (variantsArray && variantsArray.length > 0) {
-   
     const parsedVariants = variantsArray;
 
     // Create variants with proper data structure
@@ -107,7 +119,7 @@ const addProduct = catchAsync(async (req, res, next) => {
       })
     );
     productData.variants = variantIds;
-  } 
+  }
 
   const newProduct = new Product(productData);
   await newProduct.save();
@@ -144,11 +156,6 @@ const listProducts = catchAsync(async (req, res, next) => {
     activeStatus,
   } = req.query;
 
-
- 
-
-
-
   page = parseInt(page) || 1;
   limit = parseInt(limit) || 10;
   const skip = (page - 1) * limit;
@@ -176,7 +183,6 @@ const listProducts = catchAsync(async (req, res, next) => {
     filter.store = new mongoose.Types.ObjectId(store);
   }
 
-
   if (categoryId && categoryId !== "All Categories") {
     filter.category = new mongoose.Types.ObjectId(categoryId);
   }
@@ -185,13 +191,9 @@ const listProducts = catchAsync(async (req, res, next) => {
     filter.subcategory = new mongoose.Types.ObjectId(subcategoryId);
   }
 
-
   if (brandId) {
     filter.brand = new mongoose.Types.ObjectId(brandId);
   }
-
-
-
 
   if (search) {
     filter.$or = [
@@ -209,7 +211,6 @@ const listProducts = catchAsync(async (req, res, next) => {
   if (activeStatus && activeStatus !== "all") {
     filter.activeStatus = activeStatus === "active" ? true : false;
   }
-
 
   // Use aggregation pipeline for proper price handling
   const aggregationPipeline = [
@@ -459,7 +460,6 @@ const listProducts = catchAsync(async (req, res, next) => {
     Product.aggregate(countPipeline),
   ]);
 
-
   // Use the count from countResult instead of products.length
   const totalProducts = countResult[0]?.total || 0;
   const formattedProducts = products.map((product) => {
@@ -516,9 +516,6 @@ const updateProduct = catchAsync(async (req, res, next) => {
   const { productId } = req.query;
   const updateData = req.body;
 
-
-
-
   if (updateData.variants) {
     try {
       await Promise.all(
@@ -553,24 +550,50 @@ const updateProduct = catchAsync(async (req, res, next) => {
   }
 
   const variantImagesMap = {};
+  const variantFiles = {};
+
+  // First, group files by variant
   if (req.files && req.files.length > 0) {
     for (const file of req.files) {
       const { fieldname } = file;
-       if (fieldname.startsWith("variants")) {
+      if (fieldname.startsWith("variants")) {
         const match = fieldname.match(/variants\[(\d+)\]\[images\]\[(\d+)\]/);
         if (match) {
           const variantIndex = match[1];
           const imageIndex = parseInt(match[2]);
 
-          if (!variantImagesMap[variantIndex]) {
+          if (!variantFiles[variantIndex]) {
+            // Initialize with empty array for files
+            variantFiles[variantIndex] = [];
             // Initialize with existing images if it's an existing variant
             const existingVariant = product.variants[variantIndex];
             variantImagesMap[variantIndex] = existingVariant
               ? [...existingVariant.images]
               : [];
           }
-          const imageUrl = await uploadToCloudinary(file.buffer);
-          variantImagesMap[variantIndex][imageIndex] = imageUrl;
+          variantFiles[variantIndex][imageIndex] = file;
+        }
+      }
+    }
+
+    // Upload images for each variant
+    for (const [variantIndex, files] of Object.entries(variantFiles)) {
+      const filteredFiles = files.filter(file => file); // Remove any undefined entries
+      if (filteredFiles.length > 0) {
+        try {
+          const imageUrls = await uploadMultipleToS3(filteredFiles, {
+            folder: `Northlux/products/${product.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}/variant-${variantIndex}`
+          });
+          
+          // Merge new URLs with existing ones at the correct positions
+          files.forEach((file, i) => {
+            if (file) {
+              variantImagesMap[variantIndex][i] = imageUrls[filteredFiles.indexOf(file)];
+            }
+          });
+        } catch (error) {
+          console.error(`Error uploading images for variant ${variantIndex}:`, error);
+          return next(new AppError(`Failed to upload images for variant ${parseInt(variantIndex) + 1}`, 500));
         }
       }
     }
@@ -596,32 +619,26 @@ const updateProduct = catchAsync(async (req, res, next) => {
             runValidators: true,
           });
         } else {
-        
           variant.product = productId;
       
           if (variantImagesMap[index]) {
             variant.images = variantImagesMap[index].filter((img) => img);
           }
-          newVariants.push(variant);
+
+          const newVariant = new Variant(variant);
+          await newVariant.save();
+          variantIds.push(newVariant._id);
+          newVariants.push(newVariant);
         }
       })
     );
   }
 
-
-  const newVariantIds = await Promise.all(
-    newVariants.map(async (variant) => {
-      const newVariant = new Variant(variant);
-      await newVariant.save();
-      return newVariant._id;
-    })
-  );
-
   const updatedProduct = await Product.findByIdAndUpdate(
     productId,
     {
       ...updateData,
-      variants: [...variantIds, ...newVariantIds],
+      variants: variantIds,
     },
     { new: true, runValidators: true }
   );
@@ -847,9 +864,6 @@ const updateVariant = catchAsync(async (req, res, next) => {
     message: "Variant deleted successfully",
   });
 });
-
-
-
 
 module.exports = {
   addProduct,

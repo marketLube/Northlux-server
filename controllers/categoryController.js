@@ -1,7 +1,7 @@
 const { getAll } = require("../helpers/handlerFactory/handlerFactory");
 const categoryModel = require("../model/categoryModel");
 const Category = require("../model/categoryModel");
-const uploadToCloudinary = require("../utilities/cloudinaryUpload");
+const { uploadToCloudinary } = require("../utilities/cloudinaryUpload");
 const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 const mongoose = require("mongoose");
@@ -15,6 +15,7 @@ const addCategory = catchAsync(async (req, res, next) => {
   const categoryData = { name, description };
   if (req.files[0]) {
     const uploadedImage = await uploadToCloudinary(req.files[0].buffer);
+    console.log(uploadedImage);
     categoryData.image = uploadedImage;
   }
 

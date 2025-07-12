@@ -1,5 +1,5 @@
 const OfferBanner = require("../model/offerBannerModel");
-const uploadToCloudinary = require("../utilities/cloudinaryUpload");
+const {uploadToCloudinary} = require("../utilities/cloudinaryUpload");
 const AppError = require("../utilities/errorHandlings/appError");
 const catchAsync = require("../utilities/errorHandlings/catchAsync");
 const path = require("path");
